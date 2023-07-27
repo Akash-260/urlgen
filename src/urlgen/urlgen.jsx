@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import FormControl from "@mui/material/FormControl";
 import Box from "@mui/material/Box";
@@ -7,33 +7,33 @@ import { useSnackbar } from "notistack";
 import InputAdornment from "@mui/material/InputAdornment";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import {
-
-  TextField,
-
-  FormHelperText,
-
-} from "@mui/material";
+import { TextField, FormHelperText } from "@mui/material";
 
 const UrlGen = () => {
-  const [newUrl, setNewUrl] = React.useState("");
-  const [flagForNewUrl, setFlagForNewUrl] = React.useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [flagForNewUrl, setFlagForNewUrl] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
   const {
     register,
     reset,
-    submittedData,
     formState,
     handleSubmit,
     formState: { isSubmitSuccessful, errors },
   } = useForm();
 
-  React.useEffect(() => {
-    if (formState.isSubmitSuccessful) {
-      reset({ something: '' });
+  const [savedUrls, setSavedUrls] = useState([]);
+
+  useEffect(() => {
+    const storedUrls = localStorage.getItem("savedUrls");
+    if (storedUrls) {
+      setSavedUrls(JSON.parse(storedUrls));
     }
-  }, [formState, submittedData, reset]);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("savedUrls", JSON.stringify(savedUrls));
+  }, [savedUrls]);
 
   const handleRegistration = (data) => {
     setNewUrl("");
@@ -54,13 +54,19 @@ const UrlGen = () => {
     if ((data.zipcode = data.zipcode.trim()).length > 0)
       temp_url += "&zip_code=" + data.zipcode;
 
-    setNewUrl(temp_url);
-    setFlagForNewUrl(temp_url.length > 0);
-    copy(temp_url);
+      setNewUrl(temp_url);
+      setFlagForNewUrl(temp_url.length > 0);
+      copy(temp_url);
     
     enqueueSnackbar("Generated and copy sucessfully!", {
       variant: "success",
     });
+    setSavedUrls([...savedUrls, data.url]);
+  };
+  const handleReset = () => {
+    setNewUrl("");
+    setFlagForNewUrl(false);
+    reset();
   };
 
   return (
@@ -139,10 +145,11 @@ const UrlGen = () => {
           <br />
           <br />
 
-          <button style={{ width: "400px",background:"black",color:"white" }}>{flagForNewUrl?"Re-Generate URL":"Generate URL"}</button>
-          
-          <br />
-          <br />
+          <button style={{ width: "400px", background: "black", color: "white" }}>
+          {flagForNewUrl ? "Re-Generate URL" : "Generate URL"}
+        </button>
+        <br />
+        <br />
         </Box>
       </form>
       {flagForNewUrl && (
@@ -171,16 +178,23 @@ const UrlGen = () => {
         />
         
       )  }
-      <br/>
-      <br/>
-      {flagForNewUrl && ( <button onClick={()=>{
-        setNewUrl("")
-        setFlagForNewUrl(false)
-        reset()
+      
+      <br />
+      <br />
+      {flagForNewUrl && (
+        <button onClick={handleReset} style={{ width: "400px", background: "red", color: "white" }}>
+          Reset
+        </button>
+      )}
+      <div>
+        <h2>Saved URLs:</h2>
+        <ul>
+          {savedUrls.map((url, index) => (
+            <li key={index}>{url}</li>
+          ))}
+        </ul>
+      </div>
 
-      }
-
-      } style={{ width: "400px",background:"red",color:"white"  }}>Reset</button>)}
 
     </>
   );
